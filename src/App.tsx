@@ -9,6 +9,7 @@ import { BiSpreadsheet } from "react-icons/bi";
 const textColor = "rgba(0, 0, 0, 0.6)";
 const headerstyle = { padding: '4px 10px', color: textColor, fontWeight: '900' };
 import { FaTrashAlt } from "react-icons/fa";
+import { TbRuler } from 'react-icons/tb';
 
 class Order {
   OrderNumber: string = "";
@@ -19,11 +20,11 @@ class Order {
 function App() {
 
   const [Orders, UpdateSelectedOrders] = React.useState<Order[]>([]);
-  const [focusedOrder,SetFocusedOrder] = React.useState<Order>(new Order);
+  const [focusedOrder, SetFocusedOrder] = React.useState<Order>(new Order);
   const [FocusedOrderNumber, SetFocusedOrderNumber] = React.useState("");
   const [ModalOpen, SetModalOpen] = React.useState(false);
   const [selectedPallet, setSelectedPallet] = React.useState<Pallet>(new Pallet());
-  const [view,setView] = React.useState(0);
+  const [view, setView] = React.useState(0);
 
   const Pallets: Pallet[] = [
     pallet12A,
@@ -51,14 +52,11 @@ function App() {
 
     const bp: Pallet | undefined = GetPallet(o.baseType);
     const p: (Pallet | undefined)[] = o.Extensions.map((e, i) => GetPallet(e));
-
-    if(!bp){
+    if (!bp) {
       return <></>
     }
-
     const lp = p.flatMap(x => Object.entries(x?.items ?? []));
     const combinedList = Object.entries(bp.items).concat(lp);
-
     const groupedItems = combinedList.reduce((acc: { [key: string]: number }, [item, quantity]) => {
       if (acc[item]) {
         acc[item] += quantity; // Add to existing quantity
@@ -67,35 +65,28 @@ function App() {
       }
       return acc;
     }, {});
-    
-
     return <>
       <Stack>
         {Object.entries(groupedItems).map((e, i) =>
         (
           <Stack direction={"row"}>
-            <p style={{ margin: "0",width:"100px" }}> {e[0]}</p>
+            <p style={{ margin: "0", width: "100px" }}> {e[0]}</p>
             <p style={{ margin: "0" }}> {e[1]}</p>
           </Stack>
         ))}
       </Stack>
     </>
-
   }
 
-  
   const breakdownHardware = (o: Order) => {
-
     const bp: Pallet | undefined = GetPallet(o.baseType);
     const p: (Pallet | undefined)[] = o.Extensions.map((e, i) => GetPallet(e));
 
-    if(!bp){
+    if (!bp) {
       return <></>
     }
-
     const lp = p.flatMap(x => Object.entries(x?.Hardware.items ?? []));
     const combinedList = Object.entries(bp.Hardware.items).concat(lp);
-
     const groupedItems = combinedList.reduce((acc: { [key: string]: number }, [item, quantity]) => {
       if (acc[item]) {
         acc[item] += quantity; // Add to existing quantity
@@ -104,20 +95,47 @@ function App() {
       }
       return acc;
     }, {});
-    
-
     return <>
       <Stack>
         {Object.entries(groupedItems).map((e, i) =>
         (
           <Stack direction={"row"}>
-            <p style={{ margin: "0",width:"100px" }}> {e[0]}</p>
+            <p style={{ margin: "0", width: "100px" }}> {e[0]}</p>
             <p style={{ margin: "0" }}> {e[1]}</p>
           </Stack>
         ))}
       </Stack>
     </>
+  }
 
+  function mergeAllCounts(...objects: Record<string, number>[]): Record<string, number> {
+    return objects.reduce((acc, obj) => {
+      for (const [key, value] of Object.entries(obj)) {
+        acc[key] = (acc[key] || 0) + value; // Sum the counts for each key
+      }
+      return acc;
+    }, {} as Record<string, number>);
+  }
+
+  const breakdownNumberOrders = (single: boolean = true) => {
+    var ExtensionsNum: Record<string, number>[] = [];
+    const orders = single ? Orders.filter(x => x.OrderNumber === FocusedOrderNumber) : Orders;
+
+    orders.forEach((e, i) => {
+      const countMap = e.Extensions.reduce((acc: Record<string, number>, item) => {
+        acc[item] = (acc[item] || 0) + 1; // Increment count if exists, otherwise initialize to 1
+        return acc;
+      }, {});
+      ExtensionsNum.push(countMap);
+    }
+    )
+    const mergedExtensions = ExtensionsNum.reduce((acc, obj) => {
+      for (const [key, value] of Object.entries(obj)) {
+        acc[key] = (acc[key] || 0) + value;
+      }
+      return acc;
+    }, {} as Record<string, number>);
+    return mergedExtensions;
   }
 
   const UpdateNumberOfOrders = () => {
@@ -134,14 +152,10 @@ function App() {
     );
   };
 
-  // Function to update a specific property of an item
   const updateItemProperty = (id: string, property: keyof Order, value: any) => {
-
     if (property === 'baseType') {
       updateItemProperty(id, 'Extensions', [])
     }
-
-
     UpdateSelectedOrders((prevItems) =>
       prevItems.map((item) =>
         item.OrderNumber === id ? { ...item, [property]: value } : item
@@ -151,14 +165,12 @@ function App() {
 
   const getColorForExtension = (type: BaseType | ExtType) => {
     switch (type) {
-      case BaseType.A12: return "#001452";
-      case ExtType.B12: return "#104aff";
-      case ExtType.C12: return "#678cff";
-
-      case BaseType.A16: return "#7f0600";
-      case ExtType.B16: return "#ff1005";
-      case ExtType.C16: return "#ff7069";
-
+      case BaseType.A12: return "#ffec4f";
+      case ExtType.B12: return "#ffee62";
+      case ExtType.C12: return "#fff076";
+      case BaseType.A16: return "#ffad4e";
+      case ExtType.B16: return "#ffb661";
+      case ExtType.C16: return "#ffc077";
       default: return "";
     }
   }
@@ -186,10 +198,7 @@ function App() {
   };
 
   React.useEffect(() => {
-
   }, []);
-
-
 
   return (
 
@@ -198,60 +207,82 @@ function App() {
         height: '100vh',
         width: '100vw',
         display: 'flex',
-        padding: "10px",
         flexDirection: 'column',
+        alignItems: "center"
       }}>
-      <Stack sx={{}}>
-        <Stack
-          sx={{
-            gap: '10px',
-            display: 'flex',
-            margin: "1px",
-            width: "100%",
-            justifyContent: "center",
-            flexDirection: "row"
-          }}>
-          <h1 style={{ margin: "0" }} > Deck Dimensions Calculator</h1>
-        </Stack>
+
+      <Stack
+        sx={{
+          display: 'flex',
+          width: "100%",
+          justifyContent: "center",
+          flexDirection: "row"
+        }}>
+        <h1 style={{ margin: "0" }} > Deck Dimensions Calculator</h1>
       </Stack>
+
       <hr />
       <Stack
         sx={{
           height: '5%',
-          width: '100%',
-          gap: "20px",
+          width: '90%',
+          padding: "10px",
           display: 'flex',
           flexDirection: "row",
+          justifyContent: "space-between",
+
           alignItems: "center",
         }}>
+        <Stack direction={"row"} sx={{ width: "150px", justifyContent: "space-between" }}>
+          <FaTrashAlt style={{ fontSize: "30px", cursor: "pointer" }} onClick={() => RemoveOrder()} >
+            Remove
+          </FaTrashAlt>
+          <h1 style={{ margin: "0" }} > {Orders.length} </h1>
+          <FaSquarePlus style={{ fontSize: "30px", cursor: "pointer" }} onClick={() => UpdateNumberOfOrders()}>
+            Add New
+          </FaSquarePlus>
+        </Stack>
 
-        <FaTrashAlt style={{ fontSize: "30px", cursor: "pointer" }} onClick={() => RemoveOrder()} >
-          Remove
-        </FaTrashAlt>
-        <h1 style={{ margin: "0" }} > {Orders.length} </h1>
-        <FaSquarePlus style={{ fontSize: "30px", cursor: "pointer" }} onClick={() => UpdateNumberOfOrders()}>
-          Add New
-        </FaSquarePlus>
+        <Stack sx={{ backgroundColor: "#DDD", gap: "100px", borderRadius: "15px", border: "2px solid #444" }} padding={"5px"} direction={"row"}>
+          <h4 style={{ margin: "0" }}>ID: {FocusedOrderNumber}</h4>
+          <h4 style={{ margin: "0" }}>BaseType: {GetPallet(Orders.find(x => x.OrderNumber === FocusedOrderNumber)?.baseType)?.description}</h4>
+        </Stack>
 
 
-        <h4>ID: {FocusedOrderNumber}  </h4>
-        <h4>BaseType: {GetPallet(Orders.find(x => x.OrderNumber === FocusedOrderNumber)?.baseType)?.description}  </h4>
 
-      
+        <Button sx={{
+          marginRight: "30px",
+          fontSize: "12px",
+          bgcolor: "black",
+          color: "white",
+          border: "1px solid #444",
+          boxShadow: "none",
+          width: "25%",
+          height: "40px",
+          "&:hover": {
+            bgcolor: "#555", // Remove hover background
+          },
+        }}>
+          Download Packing Slip
+        </Button>
+
 
 
       </Stack>
 
       <Stack
         sx={{
-          height: '60vh',
+          height: '100vh',
           width: '100%',
           display: 'flex',
           flexDirection: "column",
           justifyContent: "start",
-          alignItems: "start",
+          alignItems: "center",
           gap: "10px",
-          overflow: "scroll"
+          padding: "20px",
+          overflow: "scroll",
+          backgroundColor: "#111",
+          border: "2px solid #444"
         }}>
 
         {
@@ -259,16 +290,14 @@ function App() {
             <Stack onClick={() => SetFocusedOrderNumber(e.OrderNumber)}
               sx={{
                 backgroundColor: FocusedOrderNumber === e.OrderNumber ? "#DDD" : "#EEE",
-                minHeight: "50%",
-                width: "90%",
+                maxHeight: "50%",
+                width: "95%",
                 gap: "10px",
                 padding: "10px",
                 cursor: "pointer",
                 borderRadius: "10px"
               }}>
-              <p style={{ margin: "0", color: "#999", fontSize: "10px" }}>
-                {e.OrderNumber}
-              </p>
+
               <Stack onClick={() => SetFocusedOrderNumber(e.OrderNumber)}
                 sx={{
                   height: "10%",
@@ -277,42 +306,55 @@ function App() {
                   justifyContent: "space-between"
 
                 }}>
-                <Stack sx={{
-                  flexDirection: "row",
-                  padding: "10px",
-                  cursor: "pointer",
-                  alignItems: "center",
+                <Stack onClick={() => SetFocusedOrderNumber(e.OrderNumber)}
+                  sx={{
+                    height: "100%",
+                    width: "15%",
+                    flexDirection: "row",
+                    justifyContent: "space-between"
+
+                  }}>
+                  <Stack sx={{ backgroundColor: "#000", gap: "100px", borderRadius: "15px", border: "2px solid #444" }} padding={"5px"} direction={"row"}>
+                    <p style={{ margin: "0", color: "#fff", fontSize: "10px" }}>
+                      {e.OrderNumber}
+                    </p>
+                  </Stack>
+
+                  <Stack sx={{
+                    flexDirection: "row",
+
+                    cursor: "pointer",
+                    alignItems: "center",
 
 
-                }}>
-                  <p style={{ margin: "0", color: "#999", fontSize: "16px" }}>
-                    12 x 12
-                  </p>
-                  <Radio
-                    checked={e.baseType === BaseType.A12}
-                    onChange={() => updateItemProperty(e.OrderNumber, 'baseType', BaseType.A12)}
-                    value={BaseType.A12}
-                    name="radio-buttons"
-                    inputProps={{ 'aria-label': 'A' }}
-                  />
-                  <p style={{ margin: "0", color: "#999", fontSize: "16px" }}>
-                    16 x 16
-                  </p>
-                  <Radio
-                    checked={e.baseType === BaseType.A16}
-                    onChange={() => updateItemProperty(e.OrderNumber, 'baseType', BaseType.A16)}
-                    value={BaseType.A16}
-                    name="radio-buttons"
-                    inputProps={{ 'aria-label': 'B' }}
-                  />
+                  }}>
 
+                    <p style={{ margin: "0", color: "#000", fontSize: "16px" }}>
+                      12 x 12
+                    </p>
+                    <Radio
+                      checked={e.baseType === BaseType.A12}
+                      onChange={() => updateItemProperty(e.OrderNumber, 'baseType', BaseType.A12)}
+                      value={BaseType.A12}
+                      name="radio-buttons"
+                      inputProps={{ 'aria-label': 'A' }}
+                    />
+                    <p style={{ margin: "0", color: "#000", fontSize: "16px" }}>
+                      16 x 16
+                    </p>
+                    <Radio
+                      checked={e.baseType === BaseType.A16}
+                      onChange={() => updateItemProperty(e.OrderNumber, 'baseType', BaseType.A16)}
+                      value={BaseType.A16}
+                      name="radio-buttons"
+                      inputProps={{ 'aria-label': 'B' }}
+                    />
+
+                  </Stack>
                 </Stack>
-
-
-
                 <Stack sx={{
                   flexDirection: "row",
-                  padding: "10px",
+
                   cursor: "pointer",
                   gap: "40px",
                   alignItems: "center"
@@ -461,35 +503,6 @@ function App() {
 
       </Stack>
 
-      <Stack
-        sx={{
-          height: '5%',
-          width: '100%',
-          gap: "20px",
-          display: 'flex',
-          flexDirection: "row",
-          justifyContent: "end",
-          alignItems: "center",
-          
-        }}>
-
-        <Button sx={{
-          marginRight:"30px",
-          fontSize: "12px",
-          bgcolor: "black",
-          color: "white",
-          border: "1px solid #444",
-          boxShadow: "none",
-          padding: 0,
-          width: "10%",
-          height: "40px",
-          "&:hover": {
-            bgcolor: "#555", // Remove hover background
-          },
-        }}>
-          Download Packing Slip
-        </Button>
-      </Stack>
 
       <Modal
         open={ModalOpen}
@@ -505,7 +518,7 @@ function App() {
           spacing={"10px"}
           sx={{
             ...Modalstyle,
-            width: "50%",
+            width: "70%",
             height: "80%",
             padding: "20px",
             borderRadius: "5px",
@@ -560,11 +573,12 @@ function App() {
               <Divider></Divider>
               <h2 style={{ margin: 0 }}>Extension Description:</h2>
               {
-                focusedOrder.Extensions.map((e, i) => (
-                  <Stack>
-                    <p style={{ margin: "0" }}>{GetPallet(e)?.description}</p>
+                Object.entries(breakdownNumberOrders(true)).map(([key, value]) => (
+                  <Stack direction={"row"} sx={{ alignItems: "center", gap: "20px" }} key={key}>
+                     <h1 style={{ margin: "0",width:"100px"  }}> <strong>{value}   X </strong></h1>  <h3 style={{ margin: "0"}}>   <strong> {GetPallet(Number(key))?.description} </strong> </h3> 
                   </Stack>
                 ))
+
               }
               <Divider></Divider>
 
